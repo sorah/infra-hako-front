@@ -1,0 +1,17 @@
+name: docker-build
+on: [push]
+
+jobs:
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - name: build
+        run: "docker build -t docker.pkg.github.com/${{ github.repository }}/front:${GITHUB_SHA} -f Dockerfile ."
+      - name: login
+        run: "docker login docker.pkg.github.com -u owner -p ${{ secrets.GITHUB_TOKEN }}"
+      - name: tag
+        run: "docker tag docker.pkg.github.com/${{ github.repository }}/front:${GITHUB_SHA} docker.pkg.github.com/${{ github.repository }}/front:latest"
+      - run: "docker push docker.pkg.github.com/${{ github.repository }}/front:${GITHUB_SHA}"
+      - run: "docker push docker.pkg.github.com/${{ github.repository }}/front:latest"

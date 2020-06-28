@@ -39,6 +39,8 @@ jobs:
 
       - name: login-dockerhub
         run: "echo ${{ secrets.DOCKERHUB_TOKEN }} | docker login -u sorah --password-stdin"
+      - run: 'gcloud --quiet auth configure-docker'
+
       - name: docker-push
         run: |
           set -x

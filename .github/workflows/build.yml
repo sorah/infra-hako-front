@@ -37,6 +37,8 @@ jobs:
       - run: "docker build --pull --platform linux/amd64 --cache-from ${ALT_DOCKER_REPO}:latest-amd64 --cache-from ${DOCKER_REPO}:latest-amd64 -t ${DOCKER_REPO}:${GITHUB_SHA}-amd64 -f Dockerfile ."
       - run: "docker build --pull --platform linux/arm64 --cache-from ${ALT_DOCKER_REPO}:latest-arm64 --cache-from ${DOCKER_REPO}:latest-arm64 -t ${DOCKER_REPO}:${GITHUB_SHA}-arm64 -f Dockerfile ."
 
+      - name: login-dockerhub
+        run: "echo ${{ secrets.DOCKERHUB_TOKEN }} | docker login -u sorah --password-stdin"
       - name: docker-push
         run: |
           set -x

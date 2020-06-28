@@ -39,12 +39,12 @@ jobs:
 
       - name: docker-push
         run: |
-          docker tag ${DOCKER_REPO}:${GITHUB_SHA}-amd64 ${ALT_DOCKER_REPO}:${GITHUB_SHA}-amd64"
-          docker tag ${DOCKER_REPO}:${GITHUB_SHA}-arm64 ${ALT_DOCKER_REPO}:${GITHUB_SHA}-arm64"
-          docker push ${DOCKER_REPO}:${GITHUB_SHA}-amd64"
-          docker push ${DOCKER_REPO}:${GITHUB_SHA}-arm64"
-          docker push ${ALT_DOCKER_REPO}:${GITHUB_SHA}-amd64"
-          docker push ${ALT_DOCKER_REPO}:${GITHUB_SHA}-arm64"
+          docker tag ${DOCKER_REPO}:${GITHUB_SHA}-amd64 ${ALT_DOCKER_REPO}:${GITHUB_SHA}-amd64
+          docker tag ${DOCKER_REPO}:${GITHUB_SHA}-arm64 ${ALT_DOCKER_REPO}:${GITHUB_SHA}-arm6"
+          docker push ${DOCKER_REPO}:${GITHUB_SHA}-amd64
+          docker push ${DOCKER_REPO}:${GITHUB_SHA}-arm64
+          docker push ${ALT_DOCKER_REPO}:${GITHUB_SHA}-amd64
+          docker push ${ALT_DOCKER_REPO}:${GITHUB_SHA}-arm64
 
       - name: docker-manifest-push
         run: |

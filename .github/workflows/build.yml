@@ -18,6 +18,11 @@ jobs:
       - uses: actions/checkout@master
       - run: 'echo $GITHUB_SHA > REVISION'
 
+      - run: |
+          mkdir -p ~/.docker
+          echo '{"experimental": "enabled"}' > ~/.docker/config.json
+          sudo docker run --rm --privileged multiarch/qemu-user-static --reset --persistent yes --credential yes
+
       - name: login-dockerhub
         run: "echo ${{ secrets.DOCKERHUB_TOKEN }} | docker login -u sorah --password-stdin"
       - uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
@@ -26,20 +31,11 @@ jobs:
           project_id: ${{ secrets.GCP_PROJECT }}
       - run: 'gcloud --quiet auth configure-docker'
 
-      - run: |
-          mkdir -p ~/.docker
-          echo '{"experimental": "enabled"}' > ~/.docker/config.json
-          sudo docker run --rm --privileged multiarch/qemu-user-static --reset --persistent yes --credential yes
-
       - run: "docker pull ${ALT_DOCKER_REPO}:latest-amd64 || :"
       - run: "docker pull ${ALT_DOCKER_REPO}:latest-arm64 || :"
 
       - run: "docker build --pull --platform linux/amd64 --cache-from ${ALT_DOCKER_REPO}:latest-amd64 --cache-from ${DOCKER_REPO}:latest-amd64 -t ${DOCKER_REPO}:${GITHUB_SHA}-amd64 -f Dockerfile ."
       - run: "docker build --pull --platform linux/arm64 --cache-from ${ALT_DOCKER_REPO}:latest-arm64 --cache-from ${DOCKER_REPO}:latest-arm64 -t ${DOCKER_REPO}:${GITHUB_SHA}-arm64 -f Dockerfile ."
-
-      - name: login-dockerhub
-        run: "echo ${{ secrets.DOCKERHUB_TOKEN }} | docker login -u sorah --password-stdin"
-      - run: 'gcloud --quiet auth configure-docker'
 
       - name: docker-push
         run: |

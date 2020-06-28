@@ -1,5 +1,14 @@
 name: docker-build
-on: [push]
+on: 
+  schedule:
+    - cron: '12 15 2,12,22 * *'
+  push:
+    branches:
+      - master
+
+env:
+  DOCKER_REPO: 'sorah/infra-hako-front'
+  ALT_DOCKER_REPO: 'gcr.io/${{ secrets.GCP_PROJECT }}/infra-hako-front'
 
 jobs:
   build:
@@ -7,11 +16,41 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
-      - name: build
-        run: "docker build -t docker.pkg.github.com/${{ github.repository }}/front:${GITHUB_SHA} -f Dockerfile ."
-      - name: login
-        run: "docker login docker.pkg.github.com -u owner -p ${{ secrets.GITHUB_TOKEN }}"
-      - name: tag
-        run: "docker tag docker.pkg.github.com/${{ github.repository }}/front:${GITHUB_SHA} docker.pkg.github.com/${{ github.repository }}/front:latest"
-      - run: "docker push docker.pkg.github.com/${{ github.repository }}/front:${GITHUB_SHA}"
-      - run: "docker push docker.pkg.github.com/${{ github.repository }}/front:latest"
+      - run: 'echo $GITHUB_SHA > REVISION'
+
+      - name: login-dockerhub
+        run: "echo ${{ secrets.DOCKERHUB_TOKEN }} | docker login -u sorah --password-stdin"
+      - uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
+        with:
+          service_account_key: ${{ secrets.GCP_SA_KEY }}
+          project_id: ${{ secrets.GCP_PROJECT }}
+      - run: 'gcloud --quiet auth configure-docker'
+
+      - run: |
+          mkdir -p ~/.docker
+          echo '{"experimental": "enabled"}' > ~/.docker/config.json
+          sudo docker run --rm --privileged multiarch/qemu-user-static --reset --persistent yes --credential yes
+
+      - run: "docker pull ${ALT_DOCKER_REPO}:latest-amd64 || :"
+      - run: "docker pull ${ALT_DOCKER_REPO}:latest-arm64 || :"
+
+      - run: "docker build --pull --platform linux/amd64 --cache-from ${ALT_DOCKER_REPO}:latest-amd64 --cache-from ${DOCKER_REPO}:latest-amd64 -t ${DOCKER_REPO}:${GITHUB_SHA}-amd64 -f Dockerfile ."
+      - run: "docker build --pull --platform linux/arm64 --cache-from ${ALT_DOCKER_REPO}:latest-arm64 --cache-from ${DOCKER_REPO}:latest-arm64 -t ${DOCKER_REPO}:${GITHUB_SHA}-arm64 -f Dockerfile ."
+
+      - name: docker-push
+        run: |
+          docker tag ${DOCKER_REPO}:${GITHUB_SHA}-amd64 ${ALT_DOCKER_REPO}:${GITHUB_SHA}-amd64"
+          docker tag ${DOCKER_REPO}:${GITHUB_SHA}-arm64 ${ALT_DOCKER_REPO}:${GITHUB_SHA}-arm64"
+          docker push ${DOCKER_REPO}:${GITHUB_SHA}-amd64"
+          docker push ${DOCKER_REPO}:${GITHUB_SHA}-arm64"
+          docker push ${ALT_DOCKER_REPO}:${GITHUB_SHA}-amd64"
+          docker push ${ALT_DOCKER_REPO}:${GITHUB_SHA}-arm64"
+
+      - name: docker-manifest-push
+        run: |
+          for repo in ${DOCKER_REPO} ${ALT_DOCKER_REPO}; do
+            docker manifest create --amend ${repo}:${GITHUB_SHA} ${repo}:${GITHUB_SHA}-amd64 ${repo}:${GITHUB_SHA}-arm64
+            docker manifest push ${repo}:${GITHUB_SHA}
+            docker manifest create --amend ${repo}:latest ${repo}:${GITHUB_SHA}-amd64 ${repo}:${GITHUB_SHA}-arm64
+            docker manifest push ${repo}:push
+          done

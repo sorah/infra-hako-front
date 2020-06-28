@@ -1,7 +1,10 @@
-FROM nginx:latest
-RUN apt-get update && \
-  apt-get install -y ruby && \
-  gem install --no-document aws-sdk-s3
+FROM nginx:mainline
+
+RUN apt-get update
+  && apt-get install --no-install-recommends -y ruby ca-certificates
+  && gem install --no-document aws-sdk-s3
+  && apt-get remove --purge --auto-remove -y
+  && rm -rf /var/lib/apt/lists/*
 
 RUN rm /etc/nginx/conf.d/default.conf
 

@@ -54,5 +54,5 @@ jobs:
             docker manifest create --amend ${repo}:${GITHUB_SHA} ${repo}:${GITHUB_SHA}-amd64 ${repo}:${GITHUB_SHA}-arm64
             docker manifest push ${repo}:${GITHUB_SHA}
             docker manifest create --amend ${repo}:latest ${repo}:${GITHUB_SHA}-amd64 ${repo}:${GITHUB_SHA}-arm64
-            docker manifest push ${repo}:push
+            docker manifest push ${repo}:latest
           done
